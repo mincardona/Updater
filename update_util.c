@@ -3,7 +3,7 @@
 #include "platform.h"
 
 #include <openssl/sha.h>
-#include <openssl/rand.h>
+//#include <openssl/rand.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -58,7 +58,9 @@ int fileSHA256(FILE* f, unsigned char *digest, unsigned long bufsiz) {
         code = 1;
     } else if (!wasDataRead) {
         // fill in hash with arbitrary data
-        RAND_bytes(digest, DIGEST_LENGTH_SHA256);
+        //RAND_bytes(digest, DIGEST_LENGTH_SHA256);
+        for (size_t i = 0; i < DIGEST_LENGTH_SHA256; i++)
+            digest[i] = 0;
     } else if (!updateSuccess) {
         code = 2;
     } else if (!SHA256_Final(digest, &context)) {
