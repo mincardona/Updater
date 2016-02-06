@@ -1,6 +1,9 @@
 #include "update_util.h"
 
+#include "platform.h"
+
 #include <openssl/sha.h>
+#include <openssl/rand.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -54,7 +57,8 @@ int fileSHA256(FILE* f, unsigned char *digest, unsigned long bufsiz) {
     if (!initSuccess) {
         code = 1;
     } else if (!wasDataRead) {
-        code = 3;
+        // fill in hash with arbitrary data
+        RAND_bytes(digest, DIGEST_LENGTH_SHA256);
     } else if (!updateSuccess) {
         code = 2;
     } else if (!SHA256_Final(digest, &context)) {
@@ -73,7 +77,7 @@ int fileSHA256(FILE* f, unsigned char *digest, unsigned long bufsiz) {
  * digestLength = length of each digest
  * returns: true if equal, false otherwise
  */
-bool isHashEqual(unsigned char *digest1, unsigned char *digest2, unsigned long digestLength) {
+bool isHashEqual(unsigned char const *digest1, unsigned char const *digest2, unsigned long digestLength) {
     for (unsigned long ofs = 0; ofs < digestLength; ofs++) {
         if (digest1[ofs] != digest2[ofs])
             return false;
@@ -125,9 +129,14 @@ bool xpReplaceFile(const char *master, const char *replaceme) {
     }
     char c;
     while ((c = getc(fmaster)) != EOF) {
-        putc(freplaceme, c);
+        putc(c, freplaceme);
     }
     fclose(fmaster);
     fclose(freplaceme);
     return true;
+}
+
+void printDigest(unsigned char const *digest, unsigned long length) {
+    for (int i = 0; i < length; i++)
+        printf("%hhx", digest[i]);
 }

@@ -4,7 +4,7 @@ CC = clang
 # compiler flags
 CFLAGS = -g -O2 -std=c99 -pedantic -Wall
 # all object files to link (src file name with .o extension)
-OBJECTS = update_util.o update.o
+OBJECTS = update_util.o update.o cutil.o
 # program executable and main file name
 PRGM = update
 # libraries to link with
