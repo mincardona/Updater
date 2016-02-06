@@ -109,6 +109,25 @@ static void clearBuf(void *buf, unsigned long size) {
     }
 }
 
-bool replaceFile(const char *master, const char *replaceme) {
+bool winReplaceFile(const char *master, const char *replaceme) {
     return CopyFile(master, replaceme, FALSE);  // windows api
+}
+
+bool xpReplaceFile(const char *master, const char *replaceme) {
+    FILE* fmaster = fopen(master, "rb");
+    if (!fmaster) {
+        return false;
+    }
+    FILE* freplaceme = fopen(replaceme, "wb");
+    if (!freplaceme) {
+        fclose(fmaster);
+        return false;
+    }
+    char c;
+    while ((c = getc(fmaster)) != EOF) {
+        putc(freplaceme, c);
+    }
+    fclose(fmaster);
+    fclose(freplaceme);
+    return true;
 }
