@@ -18,14 +18,6 @@
 static unsigned long readBytes(FILE* f, unsigned long maxbytes, unsigned char *buf);
 static void clearBuf(void *buf, unsigned long size);
 
-/**
- * Computes the SHA256 checksum of a file
- * f = file to checksum
- * digest = pointer to memory to store the digest in (32 bytes)
- * bufsiz = size, in bytes, of chunks in which the file should be read
- *          larger values use more memory, smaller values take more time
- * returns: 0 on success, nonzero on error
- */
 int fileSHA256(FILE* f, unsigned char *digest, unsigned long bufsiz) {
     int code = 0;   // return code
     unsigned long bufbytes = sizeof(unsigned char) * bufsiz;
@@ -72,13 +64,6 @@ int fileSHA256(FILE* f, unsigned char *digest, unsigned long bufsiz) {
     return code;
 }
 
-/**
- * Compares two hash message digests for equality.
- * digest1 = pointer to first digest
- * digest2 = pointer to second digest
- * digestLength = length of each digest
- * returns: true if equal, false otherwise
- */
 bool isHashEqual(unsigned char const *digest1, unsigned char const *digest2, unsigned long digestLength) {
     for (unsigned long ofs = 0; ofs < digestLength; ofs++) {
         if (digest1[ofs] != digest2[ofs])
