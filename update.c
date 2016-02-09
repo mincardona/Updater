@@ -91,6 +91,8 @@ UpdateResult update(int argc, char** argv) {
         // append the listing path to the destination path in the workspace
         strncpy(destworkspace + destlen, fpath, PATH_MAX);
         
+        bool forceOverwrite = false;
+        
         // try to open the source file
         // on failure, move to next file
         FILE* srcfile = fopen(srcworkspace, "rb");
@@ -100,63 +102,44 @@ UpdateResult update(int argc, char** argv) {
             continue;
         }
         
+        // try to checksum the source file
+        // on failure, move to next file
+        int check = fileSHA256(srcfile, digestsrc, DIGEST_LENGTH_SHA256);
+        fclose(srcfile);
+        if (check != 0) {
+            fprintf(stderr, "File source checksum failed (%d): %s\n", check, fpath);
+            result.failed++;
+            continue;
+        }
+        
         // try to open the destination file, to verify that it exists
         // and to compute its checksum
         FILE* destfile = fopen(destworkspace, "rb");
         if (!destfile) {
-            fprintf(stderr, "Error opening destination file: %s\n", fpath);
-            fclose(srcfile);
-            result.failed++;
-            continue;
-        }
-        
-        // try to checksum the source file
-        // on failure, move to next file
-        int check = fileSHA256(srcfile, digestsrc, DIGEST_LENGTH_SHA256);
-        if (check != 0) {
-            fprintf(stderr, "File source checksum failed (%d): %s\n", check, fpath);
-            fclose(srcfile);
+            forceOverwrite = true;
+        } else {
+            // try to checksum the destination file
+            // on failure, move to next file
+            check = fileSHA256(destfile, digestdest, DIGEST_LENGTH_SHA256);
             fclose(destfile);
-            result.failed++;
-            continue;
-        }
-        
-        // try to checksum the destination file
-        // on failure, move to next file
-        check = fileSHA256(destfile, digestdest, DIGEST_LENGTH_SHA256);
-        if (check != 0) {
-            fprintf(stderr, "File destination checksum failed (%d): %s\n", check, fpath);
-            fclose(srcfile);
-            fclose(destfile);
-            result.failed++;
-            continue;
-        }
-        
-        // close the destination file because it was opened for reading only
-        fclose(destfile);
-        
-        // if the hashes do not match, then replace the destination file with the source file
-        if (!isHashEqual(digestsrc, digestdest, DIGEST_LENGTH_SHA256)) {
-            // open destination file for writing
-            // on failure, move to the next file
-            destfile = fopen(destworkspace, "wb");
-            if (!destfile) {
-                fprintf(stderr, "Error opening destination file: %s\n", fpath);
-                fclose(srcfile);
+            if (check != 0) {
+                fprintf(stderr, "File destination checksum failed (%d): %s\n", check, fpath);
                 result.failed++;
                 continue;
             }
-            // replace the file
+        }
+        
+        // if the hashes do not match, then replace the destination file with the source file
+        if (forceOverwrite || !isHashEqual(digestsrc, digestdest, DIGEST_LENGTH_SHA256)) {
+            // replace the files
             if (xpReplaceFile(srcworkspace, destworkspace)) {
                 result.updated++;
+            } else {
+                result.failed++;
             }
         } else {
             result.ok++;
         }
-        
-        // close each file
-        fclose(srcfile);
-        fclose(destfile);
     }
     
     // close the file listing
